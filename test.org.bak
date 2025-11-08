@@ -1,0 +1,11 @@
+* topic 1
+** Source a for topic 1
+card 1a-1\response 1a-1
+card 1a-2\response 1a-2
+** Source b for topic 2
+card 1b-1\response 1b-1
+* topic 2
+card 2-1\response 2-2
+* topic 3
+card 3-1\response 3-1
+card 3-1\response 3-2
