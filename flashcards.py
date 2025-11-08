@@ -1,343 +1,484 @@
-# main program for tanki package
+#!/Library/Frameworks/Python.framework/Versions/3.13/bin/python3
+"""Terminal-based flash card program"""
+
+from dataclasses import dataclass
 import argparse
-import collections
 import copy
 import csv
 import datetime
+import enum
+import functools
 import heapq
 import io
 import os.path
-import random
+import pprint
 import shutil
 import sys
+from typing import Self
 
-from typing import Any
+import numpy as np
 
-from . import __about__
 
-__version__ = __about__.__version__
+# Error handling
+def eprint(*args, **kwargs):
+    """Print on stderr"""
+    print(*args, file=sys.stderr, **kwargs)
 
-# Custom types
-Line = collections.namedtuple('Line',
-                              'index text prompt response last_presentation interval')
-def line_zero() -> Line: return Line(0, '', None, None, None, None)
-def line_from_fields(index, text, fields) -> Line:
-    if len(fields) == 2:
-        return line_from_text(index, text)._replace(
-            prompt=fields[0],
-            response=fields[1]
-        )
-    if len(fields) == 4:
-        return line_from_fields(index, text, fields[0:2])._replace(
-            last_presentation=make_datetime_from_str(fields[2]),
-            interval=make_timedelta_from_str(fields[3])
-        )
-    raise ValueError(f'number of fields: {len(fields)}; field: {fields}')
-def line_from_text(index, text) -> Line:
-    return line_zero()._replace(
-        index=index,
-        text=text,
-    )
-def line_interval_days(line) -> float:
-    return line.interval.total_seconds() / (24*60*60)
-def line_kind(line) -> str:
-    if line.prompt is None: return 'text'
-    if line.last_presentation is None: return 'newcard'
-    return 'oldcard'
-def line_next_presentation(line) -> datetime.datetime:
-    kind = line_kind(line)
-    if kind == 'text': return datetime.datetime.now()
-    if kind == 'newcard': return datetime.datetime.now()
-    if kind == 'oldcard': return line.last_presentation + line.interval
-    raise TypeError(f'kind')
-def line_short_str(line):
-    kind = line_kind(line)
-    if kind == 'text': return f'Line (text) {line.text}'
-    if kind == 'newcard': return f'Line  (new) {line.prompt}'
-    return f'Line  (old) {line.prompt} {line.last_presentation}'
-def line_update_from_rating(line, rating):
-    assert rating in {'again', 'good'}
-    kind = line_kind(line)
-    assert kind in {'newcard', 'oldcard'}
-    raw_interval = (
-        datetime.timedelta(minutes=10) if rating == 'again' else
-        datetime.timedelta(days=1) if kind == 'newcard' else
-        max(datetime.timedelta(days=1), line.interval * 2.4)
-    )
-    return line._replace(
-        last_presentation=datetime.datetime.now(),
-        interval=random.uniform(raw_interval * 0.8, raw_interval * 1.2)  # add fuzz
-    )
-
-OrderedQueue = collections.namedtuple('OrderedQueue', 'heap index')
-# ref: https://www.google.com/search?client=safari&rls=en&q=python+maintain+an+ordered+queue&ie=UTF-8&oe=UTF-8
-def orderedqueue_empty(): return OrderedQueue([], 0)
-def orderedqueue_print(ordered_queue) -> None:
-    orderedqueue_for_each(ordered_queue, lambda x: print('{x}'))
-def orderedqueue_for_each(ordered_queue, f):
-    q = copy.deepcopy(ordered_queue)
-    while not orderedqueue_is_empty(q):
-        q, item = orderedqueue_pop(q)
-        f(item)
-def orderedqueue_is_empty(ordered_queue) -> bool: return not ordered_queue.heap
-def orderedqueue_peek(ordered_queue) -> Any:
-    if orderedqueue_is_empty(ordered_queue): raise IndexError('peek from empty OrderedQueue')
-    return ordered_queue.heap[0][2]  # return the item
-def orderedqueue_pop(ordered_queue) -> tuple[OrderedQueue, Any]:
-    if orderedqueue_is_empty(ordered_queue): raise IndexError('pop from empty OrderedQueue')
-    items = heapq.heappop(ordered_queue.heap)
-    return (OrderedQueue(ordered_queue.heap, ordered_queue.index), items[2])
-def orderedqueue_push(ordered_queue, item, priority) -> OrderedQueue:
-    heapq.heappush(ordered_queue.heap, (priority, ordered_queue.index, item))
-    return OrderedQueue(ordered_queue.heap, ordered_queue.index+1)
-
-verbose = True
-def vp(*args, **kwargs):  # verbose print
-    if verbose: print(*args, **kwargs)
-
-def create_backup_file(source_file_name: str) -> None:
-    # Create backup copy of file, appending current datetime
-    # ref: Goofle Search Labs
-    if not os.path.exists(source_file_name):
-        error(f'file does not exist: {source_file_name}')
-    timestamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
-    backup_file_name = f'{source_file_name}.{timestamp}.bak'
-    try:
-        shutil.copy2(source_file_name, backup_file_name)  # preserves some metadata
-    except Exception as e:
-        error(f'error creating backup of {source_file_name}: {e}')
-
-csv_delimiter = '\\'  # a single back slash
-
-def csv_fields(s: str, delimiter=csv_delimiter) -> list[str]:
-    # parse CSV fields from a string
-    for row in csv.reader([s], delimiter=delimiter):
-        return list(map(str.strip, row))  # remove leading and trailing white space
-    
-def csv_quote(s: str, delimiter=csv_delimiter) -> str:
-    # return str value quoted per CSV standards
-    with io.StringIO() as csvfile:
-        writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL, delimiter=csv_delimiter)
-        writer.writerow([s])
-        result = csvfile.getvalue().strip()
-        return result
-
-def eprint(*args, **kwargs): print(*args, file=sys.stderr, **kwargs)
 
 def error(*args, **kwargs):
+    """Print error message on stderr and exit with non-zero return code"""
     eprint(*args, **kwargs)
     sys.exit(1)
 
-def file_lines_read(filename: str) -> list[Line]:
-    if not os.path.isfile(filename):
-        error(f'the card file {filename} is not present')
-    with open(filename, 'r') as file:
-        line_index = 0
-        csv_delimiter = '\\'  # a single backslash in the file
-        result = []
-        for line_str in file:  # retains ending new lines
-            line = line_str.rstrip()
-            if len(line) == 0 or line[0] == '#' or line[0] == '*' or line.isspace():
-                result.append(line_from_text(
-                    line_index, 
-                    line))
-            else:
-                result.append(line_from_fields(
-                    line_index, 
-                    line,
-                    csv_fields(line, csv_delimiter)))
-            line_index += 1
-    return result
-            
-def file_lines_write(lines: list[Line], filename: str, args) -> None:
-    with open(filename, 'w') as file:
-        def maybe_write(line):
-            if args.debug: print(f'would write {line}')
-            else: file.write(line + '\n')
-        seconds_per_day = 24 * 60 * 60
-        n_lines_written = 0
-        for line in sorted(lines):
-            kind = line_kind(line)
-            if kind == 'text':
-                maybe_write(line.text)
-            elif kind == 'newcard':
-                prompt = csv_quote(line.prompt)
-                response = csv_quote(line.response)
-                maybe_write(prompt + '\\' + response)
-            else: 
-                assert kind == 'oldcard'
-                prompt = csv_quote(line.prompt)
-                response = csv_quote(line.response)
-                last_presentation = line.last_presentation.isoformat(timespec='minutes')
-                total_seconds = line.interval.total_seconds()
-                total_days = round(total_seconds/(24*60*60), 6)
-                interval = f'{total_days:.6f}'
-                maybe_write(prompt + '\\' + response + '\\' + last_presentation + '\\' + interval)
-            n_lines_written += 1
-    print(f'wrote {n_lines_written} lines to file {filename}')
 
-def make_datetime_from_str(s: str) -> datetime.datetime:
-    return datetime.datetime.fromisoformat(s)
+# CSV line conversions
 
-def make_parser():
-    parser = argparse.ArgumentParser(
-        description='terminal-based anki, a spaced repetition program',
-        epilog='More help can be found at https://rlowrance.github.com/tanki'
+
+def csv_fields(s: str, delimiter=",") -> list[str]:
+    """Parse CSV fields from a string"""
+    for row in csv.reader([s], delimiter=delimiter):
+        return list(map(str.strip, row))  # remove leading and trailing white space
+
+
+def csv_quote(row: [str], delimiter=",") -> str:
+    """Return str value quoted per CSV standards"""
+    with io.StringIO() as csvfile:
+        writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL, delimiter=delimiter)
+        writer.writerow(row)
+        result = csvfile.getvalue().strip()
+        return result
+
+
+def test_csv_functions():
+    """unit test"""
+    delimiter = "\\"
+    s = "a\\bb\\ccc\\dddd"
+    assert csv_fields(s, delimiter=delimiter) == ["a", "bb", "ccc", "dddd"]
+    assert csv_quote(["a", "bb", "ccc", "dddd"], delimiter=delimiter) == s
+
+
+# Custom types
+
+
+@dataclass(order=True)
+class Card:
+    """A flash card"""
+
+    headings: [str]  # context for display to user
+    index: int  # input line index
+    prompt: str  # user is shown this
+    response: str  # user should know this
+    last_presentation: None | datetime.datetime  # when card was last presented
+    interval: None | datetime.timedelta  # timedelta to next presentation
+
+    def __post_init__(self):
+        """Assure both last_presentation and interval are present or missing
+
+        Both are missing if the card has not been presented.
+        """
+        if self.last_presentation is None:
+            assert self.interval is None
+        if self.interval is None:
+            assert self.last_presentation is None
+
+    @staticmethod
+    def from_str(headings: [str], index: int, s: str) -> Self:
+        """Construct from a string"""
+        assert isinstance(headings, list)
+        assert isinstance(index, int)
+        assert isinstance(s, str)
+        fields = csv_fields(s, delimiter="\\")
+        match len(fields):
+            case 2:
+                return Card(headings, index, fields[0], fields[1], None, None)
+            case 4:
+                return Card(
+                    headings,
+                    index,
+                    fields[0],
+                    fields[1],
+                    datetime.datetime.fromisoformat(fields[2]),
+                    datetime.timedelta(days=float(fields[3])),
+                )
+            case _:
+                error(
+                    "line does not have two or four fields separated by \\:"
+                    f"{s}\n fields found: {fields}"
+                )
+
+    def is_new(self) -> bool:
+        """A Card is new if is has never been presented"""
+        return self.last_presentation is None
+
+    def is_old(self) -> bool:
+        """A Card is old if it has been presented"""
+        return not self.is_new()
+
+    def next_presentation(self) -> datetime.datetime:
+        """Return next time Card should be presented"""
+        return (
+            datetime.datetime.now()
+            if self.last_presentation is None
+            else self.last_presentation + self.interval
+        )
+
+
+def test_card_from_str():
+    """unit test"""
+    headings = ["a", "b"]
+    assert Card.from_str(headings, 123, "p\\e") == Card(
+        headings, 123, "p", "e", None, None
     )
+    expected_last_presentation = datetime.datetime(2025, 12, 25, hour=11, minute=3)
+    expected_interval = datetime.timedelta(days=1.23)
+    expected_card = Card(
+        [], 456, "prompt", "expected", expected_last_presentation, expected_interval
+    )
+    assert (
+        Card.from_str([], 456, "prompt\\expected\\20251225T1103\\1.23") == expected_card
+    )
+
+
+@enum.unique
+class InputLineKind(enum.Enum):
+    """All the types of an input line"""
+
+    CARD = 1
+    COMMENT = 2
+    EMPTY = 3
+    HEADING = 4
+
+
+@dataclass
+class InputLine:
+    """Track the index into to file so that we can reconstruct the file when we write it"""
+
+    index: int
+    text: str
+
+    def kind(self) -> InputLineKind:
+        """Determine kind of the line"""
+        if len(self.text) > 0 and self.text[0] == "*":
+            return InputLineKind.HEADING
+        if len(self.text) > 0 and self.text[0] == "#":
+            return InputLineKind.COMMENT
+        if len(self.text) == 0 or self.text.isspace():
+            return InputLineKind.EMPTY
+        return InputLineKind.CARD
+
+    def heading_depth(self) -> int:
+        """Return number of *'s at start of line"""
+
+        def recur(remaining, result):
+            if len(remaining) == 0:
+                return result
+            if remaining[0] != "*":
+                return result
+            return recur(remaining[1:], result + 1)
+
+        return recur(self.text, 0)
+
+
+class CardQueue:
+    """Queue of cards ordered by their next presentation datetimes"""
+
+    def __init__(self, cards):
+        self._heap = []
+        for card in cards:
+            self.push(card)
+
+    def __len__(self):
+        return len(self._heap)
+
+    def items(self) -> list:
+        """Return all the Cards"""
+        return self._heap
+
+    def peek(self) -> Card:
+        """Return first card without changing the queue"""
+        assert len(self._heap) > 0
+        popped = self.pop()
+        self.push(popped)
+        return popped
+
+    def pop(self) -> Card:
+        """Remove and return the first card"""
+        assert len(self._heap) > 0
+        first = heapq.heappop(self._heap)
+        return first[1]  # [0]=key [1]=Card
+
+    def push(self, card):
+        """Mutate queue to contain a new card"""
+        assert isinstance(card, Card)
+        heapq.heappush(self._heap, (card.next_presentation(), card))
+
+
+def file_create_backup(source_file_name: str) -> None:
+    """Create backup copy of file with name suffixed by current datetime"""
+    # ref: Google Search Labs
+    assert os.path.exists(source_file_name)
+    timestamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
+    backup_file_name = f"{source_file_name}.{timestamp}.bak"
+    try:
+        shutil.copy2(source_file_name, backup_file_name)  # preserves some metadata
+    except FileNotFoundError as e:
+        error(f"error creating backup of {source_file_name}: {e}")
+
+
+def file_read_lines(filename: str, verbose) -> ([InputLine], [Card]):
+    """Return all the lines and the Cards in them"""
+    assert os.path.isfile(filename)
+    with open(filename, "r", encoding="utf-8") as file:
+        raw_lines = file.readlines()
+
+    input_lines = []
+    cards = []
+    # A Card knows about any headings preceeding it; the headings are topics or sources
+    current_headings = []
+
+    for index, raw_line in enumerate(raw_lines):
+        if verbose:
+            print("raw_line", raw_line)
+        input_line = InputLine(index, raw_line.rstrip())
+        input_lines.append(input_line)
+        match input_line.kind():
+            case InputLineKind.CARD:
+                # be sure to copy the headings as current_heading is mutated
+                card = Card.from_str(
+                    copy.deepcopy(current_headings), index, input_line.text
+                )
+                cards.append(card)
+            case InputLineKind.COMMENT:
+                continue
+            case InputLineKind.EMPTY:
+                continue
+            case InputLineKind.HEADING:
+                depth = input_line.heading_depth()
+                if verbose:
+                    print(depth, current_headings)
+                while depth != len(current_headings) + 1:
+                    if depth < len(current_headings) + 1:
+                        current_headings.pop()
+                    else:
+                        current_headings.append(" ")
+                current_headings.append(input_line.text)
+
+        if verbose:
+            print("updated current_headings", current_headings)
+            print("cards")
+            pprint.pprint(cards)
+    return input_lines, cards
+
+
+def file_write_lines(lines: [InputLine], cards: [Card], filename, verbose) -> None:
+    """Write lines and miutated cards to an output file"""
+    card_for_index = {card.index: card for card in cards}
+    with open(filename, "w", encoding="utf-8") as file:
+        n_lines_written = 0
+        for line in lines:  # sorted by index
+            match line.kind():
+                case InputLineKind.CARD:
+                    card = card_for_index[line.index]
+                    match card.is_new():
+                        case True:
+                            fields = [
+                                card.prompt,
+                                card.response]
+                        case False:
+                            fields = [
+                                card.prompt,
+                                card.response,
+                                card.last_presentation.isoformat(),
+                                str(card.interval.total_seconds()/(24*60*60)),
+                            ]
+                    s = csv_quote(fields, delimiter="\\") + "\n"
+                case _:
+                    s = line.text + "\n"
+            if verbose:
+                print(f"writing line: {s[:-1]}")
+            file.write(s)
+            n_lines_written += 1
+    print(f"wrote {n_lines_written} lines to file {filename}")
+
+
+def make_parser() -> argparse.ArgumentParser:
+    """Return an Argument Parse"""
+    parser = argparse.ArgumentParser(
+        description="terminal-based flash cards, a spaced repetition program",
+        epilog="More help can be found at https://rlowrance.github.com/flashcards",
+    )
+
     def add_flag(*names, **kwargs):
-        parser.add_argument(*names, action='store_true', default=False, **kwargs)
-    add_flag('--version', help='show version and exit')
-    add_flag('--debug',help='for the developer only')
-    parser.add_argument('filename', nargs='?', help='filename to read (required)')
+        """Add a flag to the parser"""
+        parser.add_argument(*names, action="store_true", default=False, **kwargs)
+
+    add_flag("--version", help="show version and exit")
+    add_flag("--develop", help="for the developer only")
+    parser.add_argument("filename", nargs="*", help="filename to read (required)")
     return parser
 
-def make_timedelta_from_str(s: str) -> datetime.datetime:
-    return datetime.timedelta(days=float(s))
+
+def make_uniform_random_sampler():
+    """Return a function that samples from a uniform interval"""
+    rnd = np.random.default_rng()  # No seed by intention
+
+    def random_interval(mean_interval: datetime.timedelta) -> datetime.timedelta:
+        """Sample and return an interval centered on the specified mean"""
+        assert isinstance(mean_interval, datetime.timedelta)
+        mean_seconds = mean_interval.total_seconds()
+        sample = rnd.uniform(0.5 * mean_seconds, 1.5 * mean_seconds)
+        return datetime.timedelta(seconds=sample)
+
+    return random_interval
+
 
 def main():
+    """Run main program"""
     parser = make_parser()
+
+    def error_print_help(*args, **kwargs):
+        eprint(*args, **kwargs)
+        parser.print_help()
+        sys.exit(1)
+
     args = parser.parse_args()  # take args from sys.argv
-    global verbose
-    verbose = args.debug
-    vp('args', args)
-    random.seed(123)
 
-    if args.version: 
+    if args.develop:
+        print("args", args)
+
+    if args.version:
         invocated = os.path.basename(sys.argv[0])
-        print(f'{invocated} {__version__}')
+        print(f"{invocated} 1.1")
         sys.exit(0)
 
-    if args.filename is None:
-        eprint('Missing required filename')
-        parser.print_help()
-        sys.exit(1)
+    if args.filename is None or len(args.filename) != 1:
+        error_print_help("Did not supply one filename")
 
-    if not os.path.exists(args.filename):
-        eprint(f'file does not exist: {args.filename}')
-        parser.print_help()
-        sys.exit(1)
+    filename = args.filename[0]
+    if not os.path.exists(filename):
+        error_print_help(f"File does not exist: {filename}")
 
-    create_backup_file(args.filename)
+    file_create_backup(filename)
 
-    lines: list[Line] = file_lines_read(args.filename)
-    if len(lines) == 0:
-        print(f'empty input file: {args.filename}')
+    input_lines, cards = file_read_lines(filename, args.develop)
+    if len(input_lines) == 0:
+        print(f"empty input file: {args.filename}")
         sys.exit(0)
-    if args.debug:
-        print('lines read')
-        for line in lines: print(f'  {line}')
-    print_lines_summary(lines)
-    updated_lines = process_lines(lines, args)  # was process_cards
-    file_lines_write(updated_lines, args.filename, args)  # was file_cards_write
+    if args.develop:
+        print("lines read")
+        for input_line in input_lines:
+            print(f"line:  {input_line}")
+        for card in cards:
+            print(f"card: {card}")
+    print_input_summary(input_lines, cards)
+    if len(cards) == 0:
+        error("ERROR: No cards were found")
 
-def present_card(card) -> str:
-    # present a card and return its rating or 'quit'
-    print(f'{card.prompt}')
-    user_input = input(f'? ')
-    if len(user_input) > 0 and user_input[0] == 'q': return 'quit'
-    print(f': {card.response}')  # expected response
+    # Spread out intervals to spread out cards introduced at the same time
+    random_sampler = make_uniform_random_sampler()
+    process_cards(cards, random_sampler, args.develop)  # mutate cards
+    file_write_lines(input_lines, cards, filename, args.develop)
+
+
+def print_input_summary(lines: [InputLine], cards: [Card]) -> None:
+    """Print a summary of the input lines"""
+    print(f"read {len(lines)} lines")
+
+    new_cards = [card for card in cards if card.is_new()]
+    old_cards = [card for card in cards if card.is_old()]
+    old_due_cards = [card for card in old_cards if card.next_presentation() <= datetime.datetime.now()]
+    print(f"found {len(new_cards)} new cards, all of which are due")
+    print(f"found {len(old_cards)} old cards, {len(old_due_cards)} of which are due ")
+
+    if len(old_cards) > 0:
+        old_card_intervals = [card.interval for card in old_cards]
+        max_interval = max(old_card_intervals)
+        sum_intervals = functools.reduce(
+            lambda x, y: x + y, old_card_intervals, datetime.timedelta(seconds=0)
+        )
+        avg_interval = sum_intervals / len(old_cards)
+        print(
+            f"average interval for old cards is {avg_interval.days} days, {round(avg_interval.seconds/60/60, 1)} hours"
+        )
+        print(
+            f"longest interval for old cards is {max_interval.days} days, {round(max_interval.seconds/60/60, 1)} hours"
+        )
+
+
+def process_card(card) -> str:
+    """Present a card and return its rating or 'quit'"""
+    for heading in card.headings:
+        print(heading)
+    # align prompts
+    p1 = f"           prompt: {card.prompt}"
+    p2 = f"    your response? {' '}"
+    p3 = f"expected response: {card.response}"
+
+    print(p1)
+    user_input = input(p2)
+    if len(user_input) == 1 and user_input == "q":
+        return "quit"
+    print(p3)
 
     def get_rating(n_bad):
-        rating = input('Rating (agq)? ')
-        if rating == 'a': return 'again'
-        if rating == 'g': return 'good'
-        if rating == 'q': return 'quit'
-        if rating == '': return 'good'
+        rating = input("Rating (agq)? ")
+        if rating == "a":
+            return "again"
+        if rating == "g":
+            return "good"
+        if rating == "q":
+            return "quit"
+        if rating == "":
+            return "good"
         if n_bad > 3:
-            print('assuming quit')
-            return 'quit'
-        print('a: again')
-        print('g: good')
-        print('q: quit')
-        print('(return): good')
+            print("assuming quit")
+            return "quit"
+        print("a: again")
+        print("g: good")
+        print("q: quit")
+        print("(return): good")
         return get_rating(n_bad + 1)
-    
+
     return get_rating(0)
 
-def print_lines_summary(lines: list[Line]) -> None:
-    print(f'read {len(lines)} lines; found')
-    n_text_lines = 0
-    n_new_cards = 0
-    n_old_cards = 0
-    old_cards_total_interval = datetime.timedelta(seconds=0)
-    count_of_cards_on_date = collections.defaultdict(int)
-    for line in lines:
-        kind = line_kind(line)
-        if kind == 'text': n_text_lines += 1
-        if kind == 'newcard': 
-            n_new_cards += 1
-            date = line_next_presentation(line).date()
-            count_of_cards_on_date[date] += 1
-        if kind == 'oldcard': 
-            n_old_cards +=1
-            old_cards_total_interval += line.interval
-            date = line_next_presentation(line).date()
-            count_of_cards_on_date[date] += 1
-    print(f' {n_text_lines} text lines')
-    print(f' {n_new_cards} new cards')
-    print(f' {n_old_cards} old cards')
 
-    if n_old_cards > 0:
-        mean_seconds = old_cards_total_interval.total_seconds() / n_old_cards
-        mean_days = mean_seconds / (24 * 60 * 60)
-        print(f'For the old card, the mean interval is {round(mean_days, 1)} days')
+def process_cards(cards, random_interval, verbose):
+    """Present cards that are due and mutate then to reflect user choices"""
+    card_queue = CardQueue(cards)  # cards are ordered by next presentation date
 
-    print(f'The number of cards due to be presented on each date is')
-    for date in sorted(count_of_cards_on_date.keys()):
-        count = count_of_cards_on_date[date]
-        print(f' {date}: {count}')
+    prelook = datetime.timedelta(hours=1)
+    days_1 = datetime.timedelta(days=1)
+    while True:
+        if verbose:
+            print("CardQueue")
+            for card in card_queue.items():
+                print(card)
+        card = card_queue.pop()  # retrieve card with lowest next presentation date
+        if card.next_presentation() > datetime.datetime.now() + prelook:
+            break
+        rating = process_card(card)  # mutate card
+        match rating:
+            case "again":
+                card.last_presentation = datetime.datetime.now()
+                card.interval = datetime.timedelta(
+                    minutes=10
+                )  # this is within th eprelook time period
+            case "good":
+                if verbose:
+                    print("card", card)
+                    print("is_new", card.is_new())
+                next_last_presentation = datetime.datetime.now()
+                next_interval = random_interval(
+                    days_1 if card.is_new() else max(days_1, card.interval * 2.4)
+                )
+                card.last_presentation = next_last_presentation
+                card.interval = next_interval
+            case "quit":
+                return
+        card_queue.push(card)
 
-def process_lines(lines: list[Line], args) -> list[Line]:
-    # present lines that are cards until all ready cards have been rated good
-    # return possibly mutated lines
-    def display(line: Line) -> str:
-        kind = line_kind(line)
-        result = f'  {kind}'
-        if kind == 'text': 
-            print(result + f' {line.text}')
-            return
-        print(result + f' {line_next_presentation(line)} {line.prompt}')
-    
-    queue = orderedqueue_empty()
-    for line in lines:
-        queue = orderedqueue_push(queue, 
-                                  line, 
-                                  line_next_presentation(line))
-        
-    result = []
-    while not orderedqueue_is_empty(queue):
-        if args.debug: 
-            print('queue')
-            orderedqueue_for_each(queue, display)
-        queue, line = orderedqueue_pop(queue)
-        if line_kind(line) == 'text':
-            result.append(line)
-            continue
-        # present cards that are due within the hour
-        next_presentation = line_next_presentation(line)
-        if next_presentation > datetime.datetime.now() + datetime.timedelta(hours=1):
-                result.append(line)
-                continue
-        rating = present_card(line)
-        if rating == 'quit':
-            result.append(line)
-            while not orderedqueue_is_empty(queue):
-                queue, line = orderedqueue_pop(queue)
-                result.append(line)
-            return result
-        updated_line = line_update_from_rating(line, rating)
-        queue = orderedqueue_push(queue, 
-                                    updated_line, 
-                                    line_next_presentation(updated_line))
-    return result
+    return  # have mutated some of the cards
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-        
-
-
-
-                    
