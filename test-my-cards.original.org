@@ -1,0 +1,264 @@
+* LLMs
+** Rashka-2025-Build a Large Language Model From Scratch
+*** ch 1 Understanding large language models
+NLP was transformed though {} and {}.\{training on large data sets} {using the transformer architecture}
+The transformer architecture enables {}.\the model to pay selective attention to part of the input
+To outperform a general LLM, use {}.\a custom built one
+The first stage of training for an LLM is call {} and results in a {} model.\{pretraining} {foundation}
+The most popular fine-tunings are {} and {}.\{instruction fine-tuning} {classification fine-tuning}
+Most LLMs rely on the {} architecture.\transformer
+The transformer architecture contains these two submodules: {} and {}.\{an encoder} {a decoder}
+The encoder in a transformer converts inputs {} into outputs {}.\{text} {vectors}
+The vectors output by the encoder in a transformer contain {}.\context information
+The decoder in a transform converts inputs {} into outputs {}.\{vectors with context information} {generated text}
+The self attention mechanism in an LLM is in which submodules?\both the encoder and decoder
+The self attention mechanism allows the model to {}.\weight the importance of tokens to other tokens
+Open AI's ChatGPT model employs only {} portion of the transformer model.\decoder
+GPT models can perform {} even though they were not explicitly trained to do so.\language translation (and perhaps other tasks)
+*** ch 2 Working with text data
+The tokenization strategy in GPT is called {}.\byte pair encoding
+Embedding means {}.\to convert words into numerical vectors
+The embedding using for retrieval-augmented generation (RAG) is often {} or {}.\{sentence embedding} {paragraph embedding}
+ChatGPT uses the {} tokenization.\byte pair encoding
+* Apple Game Frameworks and Technologies
+# Restart heading Creating a Scene in https://developer.apple.com/library/archive/documentation/GraphicsAnimation/Conceptual/SpriteKit_PG/Nodes/Nodes.html
+In SpriteKit, a scene's default origin is {where}.\it's lower-left corner.\2025-09-22T18:56:00\5.799427
+In SpriteKit, the effect of a scene's position property is {}.\mothing, because it is ignored\2025-09-22T18:57:00\8.165294
+In SpriteKit, you can change a scene's original by {}.\setting its anchorPoint property.\2025-09-22T18:56:00\5.092068
+In SpriteKit, two common anchorPoint property values for a scene are {} and {}.\{(0,0) aka CGPointZero} and {(0.5, 0.5), the center}\2025-09-11T12:52:00\34.432203
+# Restart at A Scene's Contents are Scaled to Fit the View
+In SpriteKit, which types of objects have sizes?\scenes and views\2025-09-22T17:42:00\4.437686
+In SpriteKit, the frame of a node is {}.\the visible area in the parent's coordinate system\2025-09-04T11:04:00\36.510039
+In SpriteKit, a node type draws if and only if {} or {}.\{it has a frame property with a non-zero size} {it's children draw content}\2025-09-22T19:01:00\24.819391
+In SpriteKit, do all node types draw content?\no\2025-09-04T10:46:00\31.765716
+In iOS, the default coordinate system has its origin at {}.\the upper left corner of the drawing area.\2025-11-02T18:27:51.779640\1.628645328414352
+# In macOS, the default coordinate system has its origin at {}.\the lower left corner of the drawing area.\2025-09-06T16:56\2.020717
+# In macOS, can a program switch the default coordinate system to be like that of iOS?\yes\2025-09-04T10:46\31.245936
+In SpriteKit, coordinates are measured in {what unit}.\points, which are converted to pixels when the node is rendered\2025-09-11T12:51:00\32.45931
+In SpriteKit, the SKNode.position property is {}.\the position of the node in the coordinate system of its parent\2025-09-04T10:41:00\24.945464
+In SpriteKit, to create a custom scene, subclass {}.\SKScene\2025-09-11T12:55:00\43.670379
+In SpriteKit, a scene's content is made up of {}.\a tree of nodes\2025-09-04T09:17:00\22.512229
+In SpriteKit, a view is in an instance of the class {}.\SKView\2025-09-04T10:45:00\39.847359000000004
+In SpriteKit, a scene is an instance of the class {}.\SKScene\2025-09-11T12:55:00\15.288039999999999
+In SpriteKit, scenes are used to {}.\provide contents to be rendered views.\2025-09-04T09:17:00\26.928468999999996
+In SpriteKit, instead of hardcoding references to interesting nodes, {}.\give the node a unique name property and search for it in the tree.\2025-09-04T10:44:00\33.049946
+In SpriteKit, a node with a larger z-position is written {} of a node with a lower z-position\on top, because nodes are rendered in increasing z-position order\2025-08-01T19:45:00\83.491381
+In SpriteKit, to animate a node, write code to {}.\cycle through an array of textures (aka, images)\2025-07-19T16:55:00\75.54070200000001
+In Xcode, to be able to jump to a location in a file, {}.\add a comment starting // MARK: <tag>.\2025-07-25T12:39:00\93.11022200000001
+In SpriteKit, your Player class is a subclass of {}.\SKSpriteNode, because it is a node\2025-09-23T19:33:00\110.14243300000001
+In SpriteKit, to animate a sprite you {}.\cycle through textures (images) one by one\2025-07-29T20:12:00\98.38744
+"In animation, the ""on twos"" principle is {}."\to redraw the animation image every two frames\2025-07-19T16:56:00\77.192686
+# In SpriteKit, the source code file controlling the main game scene is named {}.\GameScene.swift\2025-06-22T09:11\46.830502
+In SpriteKit, the file defining the main view controller is named {}.\GameViewController.swift\2025-11-02T17:05:41.909968\0.006944444444444444
+# In SpriteKit, a view controller is responsible for {}.\loading the view\2025-05-06 17:26:38.624844\1.8692090748032408
+In SpriteKit, a game scene is {}.\a visual representation of a game world\2025-09-04T10:43:00\172.172505
+In SpriteKit, a game scene contains {}, {}, and {}.\(sprites) (animations) (game logic)\2025-09-22T18:58:00\13.046800999999999
+An Apple Framework is {}.\a structured directory containg a dynamic shared library and associated resources\2025-09-11T12:55:00\176.29155799999998
+The Apple GameplayKit is a {} containing {}.\(framework) (classes useful for adding functionality to a game)\2025-09-23T19:33:00\146.394804
+Apple's Game Center allows you to {}.\find opponents for a game\2025-07-29T13:55:00\87.702451
+The Coron 2021 book covers which three technologies?\SpriteKit, GameplayKit, and Game Center.\2025-11-02T17:03:40.174724\1.0971810749537037
+When developing 2D games, Coron starts with {} and then converts to {} if necessary.\(SpriteKit) (Unity)\2025-07-19T16:56:00\78.631768
+In the RGBA color model, to make the color fully opaque, set {}.\alpha to 1.0.\2025-08-04T10:46:00\121.57231099999998
+In SpriteKit, after the view presents the scene, what method is called?/\didMove(to:)\2025-08-13T10:14:00\84.500916
+
+* Apple SpriteKit
+In Apple's SpriteKit, an SKScene object represents {}.\the content of a scene.\2025-08-05T15:53:00\57.38542699999999
+In Apple's SpriteKit, a scene contains {}.\a root node in a tree of SpriteKit nodes.\2025-09-04T11:05:00\81.469343
+In Apple's SpriteKit, a node is an instance of the class {}.\SKNode\2025-08-16T09:19:00\47.146751
+In Apple's SpriteKit, to display a scene, {}.\present in from an SKView.\2025-09-11T12:54:00\74.595185
+
+* Apple SKScene class
+In Apple's SKScene class, the size of the scene is in the {} property and is measured in {}.\(size) (points)\2025-09-22T18:57:00\96.500753
+In Apple's SKScene class, the point in the view's frame that corresponds to the scene's origin is in the {} property.\anchorPoint\2025-09-04T09:15:00\23.098764
+In Apple's SKScene class, the property size holds {}.\the dimensions of the scene in points\2025-09-22T17:41:00\107.785963
+In Apple's SKScene class, the property anchorPoint holds {}.\the point in the view's frame that corresponds to the scene's origin.\2025-09-04T09:17:00\25.543352
+In Apple's SKScene class, to be informed when the scene is presented by a view, {}.\define a method that overrides the ~didMove(to:)~ method.\2025-09-06T16:56:00\44.966817
+In Apple's SKScene class, the ~didMove(to:)~ method is called when {}.\the scene is presented by a view.\2025-08-07T09:15:00\57.706084
+In Apple's SKScene class, to update your scene while the game is running, {}.\override the method ~update(TimeInterval)~\2025-09-04T08:57:00\32.262730999999995
+In Apple's SKScene class, the method ~update(TimeInterval)~ is called {}.\to allow your app to update the scene.\2025-08-13T10:16:00\67.48415299999999
+In Apple's SKScene class, when the method ~didMove(to:)~ is called, your scene should {}.\set up the scene's contents because the method is called only once.\2025-09-22T18:57:00\104.55398
+
+* Apple UIKit
+#In UIKit, an app bundle is {}.\a structured directory containing code and resources for an app\2025-07-05T11:05\64.159871
+#Every UIKit app must have {} and {}.\(app icons) (launch screen storyboard)\2025-09-06T16:57\2.169071
+#In UIKIt, your app icons are used by the system to {}.\identify your app to users on the Home screen, in Settings, and elsewhere\2025-09-04T11:05\138.128814
+#In UIKit, your launch screen storyboard contains {}.\your app's initial user interface, which could be a splash screen used to indicate to the user that your app is launching\2025-07-15T11:07\76.270406
+#In UIKit, to maintain a disk-based file, consider using the class {}.\UIDocument.\2025-09-04T10:45\17.002905
+#In UIKit, to display content on the screen, you can use an {} object or the {} framework.\(UIView) (Metal or other)\2025-09-04T08:58\43.853913
+#In UIKit, an object of type {} runs your app's main event loop.\UIApplication\2025-09-04T09:08\2.480755
+#UIKit started as a specialized version of {} adapted for {}.\(AppKit) (mobile devices)\2025-06-30T20:38\73.200859
+#AppKit is designed for {}.\creating apps on MacOS\2025-09-04T09:16\26.549987
+#Two ways to write an app that runs on MacOS and iOS are {} and {}.\(use SwiftUI) (write it in UKKit then use Mac Catalyst to port it to MacOS)\2025-07-30T10:54\69.516795
+
+* History of Ireland
+** Early 1010s: the Normans become established in France
+# Who were the Normans?\French-speaking descendents of the Vikings who had been given land in Normandy, France\2025-09-04T11:04\40.857530
+# Why were the Vikings given land in Normandy?\The French king hoped they would protect France from more Viking invaders.\2025-09-11T12:57\45.965946
+# When were the Vikings given land in Normandy?\The early 1010's.\2025-09-04T09:05\25.281042
+# Where is Normandy?\Is is on the coast, west of Paris.\2025-09-04T08:58\29.296226
+** The Norman Conquest of England
+# The Norman Conquest of England finalized in the {what event} in the year {}.\(Battle of Hastings) (1066)\2025-09-22T18:56\8.177972
+# Hastings, England is located {}.\On the south east coast--it's the nearest part of England to Normandy in France.\2025-09-11T12:47\28.599046
+# The Norman leader of the Battle Of Hastings was {}.\William the Conqueror\2025-09-04T08:57\20.737482
+# The Anglo-Saxon leader of the Battle of Hasting was {}.\Harold Goodwinson\2025-09-04T10:45\18.677675
+# The last Anglo-Saxon King of England was {} who {did what}.\(Harold Goodwinson) (lost the Battle of Hastings)\2025-09-22T17:41\0.008059
+** 1169: Normans arrive in Ireland
+# What happened in 1169 in Ireland?\Norman soldiers arrived in Wexford, Ireland.
+# Where is Wexford, Ireland?\On the southeastern cost, south of Dublin.
+# Who invited the Normans into Ireland?\An Irish King (Dermot MacMurrough)
+# Why were the Normans invited into Ireland?\An Irish King wanted to win back his kingship
+** England attempts control of Ireland
+# In Irish history, the English Crown claims a lordship over Ireland first in the year {}.\1175
+# Initially, English control of Ireland was limited to {}\Dublin and the area around it
+# The Pale is {}\Dublin and the area around it.
+# Who controlled the Pale?\the English
+# Who controlled the area outside the Pale?\the Gaelic lords
+** 1601: Battle of Kinsale
+# In Irish history, when was Gaelic Ireland defeated by England?\1601
+# In Irish history, the English defeated the Gaelic Irish in the battle {}.\of Kinsale
+# In Irish history, what was the "Act of Union"?\It created the United Kingdom of Great Britain and Ireland
+# In Irish history, When was the Act of Union passed by the UK Parliament?\In 1800
+# In Irish history, the Act of Union dissolved the Irish Parliament on {}.\1801-01-01 (The act passed in 1800)
+* ed editor
+# In the ed editor, to move lines 10-20 to the end of the file, execute {}\10,20m$; the m stands for move\2025-09-22T17:40\0.005798
+# In the ed editor, to copy lines 10-20 to the end of the file execute {}\"""10,20t$: the t stands for copy To"""\2025-09-22T19:00\13.023130
+# In the ed editor, to replace X with Y in lines 10-20 execute {}\"""10,20s/X/Y/g: the g makes the substitutions global (not just the first found)"""\2025-09-22T19:00\122.022563
+
+* Emacs extensions I have installed
+In Emacs, to reload the init.el file (after an edit, say), enter {}.\M-x load-file and point to the new init.el file\2025-09-22T18:59:00\16.2393
+
+* Emacs launching
+To start emacs via a MacOS terminal, enter the command {}.\open -a Emacs &
+# To start the emacs daemon, enter the terminal command {}.\emacs --daemon\2025-07-21T10:23\0.834875
+# To start the emacs client in a new frame, enter {}.\emacs -c (where the -c is an abbreviation for --create-frame)\2025-07-20T18:16\2.033014
+
+* Emacs Dired
+In Emacs Dired, to mark a file for deletion, navigate to it and enter {}.\d (dired-flag-file-deletion)\2025-09-04T11:05:00\21.806888999999998
+In Emacs Dired, to remove the deletion flag from a file, navigate to it and enter {}.\u (dired-unmark)\2025-09-22T17:42:00\47.586621
+In Emacs Dired, to delete files flagged for deletion, enter {}.\x (dired-do-flagged-delete)\2025-09-22T19:01:00\20.237157
+In Emacs Dired, to refesh the display of directory buffer, enter {}.\g (revert-buffer)\2025-09-22T18:59:00\13.251508000000001
+To enter emacs Dired in my Dropbox folder, enter {}.\C-x d ~/Dropbox RET\2025-09-22T17:41:00\78.79572499999999
+
+* Emacs org-mode
+In Emacs org-mode, to edit the visible part of a link, first do {} then {}.\(place point on the link) (C-c C-l)\2025-09-22T19:00:00\16.587725
+In Emacs org-mode, to insert a new heading that links to an existing heading, {}.\(type STAR + prefix, then M-TAB and select from the list in the mini buffer)\2025-11-02T17:05:55.773901\0.006944444444444444
+In Emacs org-mode, to view todo items in a sparse tree, enter {}.\C-c / t (org-show-todo-t¯ree)\2025-09-22T17:41:00\2.814671
+
+* Emacs editor
+"In Emacs, to type the letter ""e"" with an acute accent, enter {}"\C-x 8 ' e\2025-09-11T12:53:00\74.42401
+"In Emacs, to type the letter ""n"" with a tilde, enter {}"\C-x 8 ~ n\2025-08-23T07:19:00\36.608214000000004
+In Emacs, to see the current file path, enter the command {}.\C-x C-v (the path will appear in the mini buffer)\2025-11-02T17:04:40.398928\1.0644072391435184
+To start the emacs app in a terminal, enter the command {}.\emacs -nw <filename>\2025-08-23T07:22:00\90.843788
+In Emacs, the meta key on MacOS is the {} key.\option\2025-07-20T18:15:00\71.27058199999999
+In Emacs, to move to the beginning of the buffer, enter {}.\M-<\2025-07-30T15:13:00\114.13906899999999
+In Emacs, to move to the end of the buffer, enter {}.\M->\2025-08-08T12:02:00\91.42122400000001
+In Emacs, to stop a command, enter {}.\C-g (control onGoing work)\2025-09-04T10:41:00\153.414191
+In Emacs, to undo the last command, enter {}.\C-/ (undo)\2025-09-22T18:59:00\134.653456
+In Emacs, to begin marking text, enter {}.\C-<SPC>\2025-08-16T09:37:00\133.363988
+In Emacs, to kill the text in a region, enter {}.\C-w (kill-region)--write marked text to the kill ring\2025-09-04T10:45:00\147.183483
+In Emacs, to copy text in a region, enter {}.\M-w (kill-ring-save)\2025-09-04T11:04:00\100.15716
+In Emacs, to pull text from the kill ring, enter {}.\C-y (yank)--yank the last kill into the buffer at point\2025-08-07T09:14:00\83.373537
+
+* Jupyter
+To access the Python interactive debugger, import {} then call {}.\{from IPython.core.debugger import set_trace()}  {set_trace()}
+* Nielsen-2018
+Nielsen 2018 puts info in Anki if {} or {}.\(It's worth 10 minutes to memorize it) (It is striking)\2025-09-04T10:46:00\34.165854
+Nielsen 2018 classifies papers as {}.\worth a deep dive or worth a shallow read\2025-08-13T10:13:00\99.510246
+For a deep dive paper, Nielsen 2018 reads it {}\multiple times over weeks.\2025-07-25T12:51:00\100.47039000000001
+In reading a deep dive paper, Nielsen 2018 initially writes {}.\cards with basic facts and background knowledge (possibly from non-paper sources)\2025-07-10T17:35:00\85.268643
+In the final passes of a deep dive paper, Nielsen 2018 writes {}.\everything he wants to remember.\2025-07-15T11:08:00\82.509191
+Nielsen 2018 recommends writing cards only if {}.\you are working on a related project.\2025-08-16T09:34:00\143.166067
+Nielsen 2018 says that a failure mode in writing cards is {}\to stockpile knowledge that you end up not needing.\2025-09-11T12:54:00\150.036256
+To synoptically read for a field, Nielsen 2018 recommends {}\Interleave reading the top papers with reading lesser papers.\2025-09-06T16:53:00\120.942948
+For hard-to-remember facts, Nielsen 2018 recommends {}\writing multiple cards, each for an atomic piece of information.\2025-09-11T12:54:00\141.711377
+Most of Nielsen 2018's cards are {} and {}\(Q&A) (cloze deletion)\2025-07-30T10:54:00\93.767888
+To learn an API, Nielsen 2018 recommends {}\modifying working code that is becoming your project while reading tutorials that are relevant.\2025-08-01T19:46:00\93.513478
+When working through a tutorial, Nielsen 2018 recommends {}\at first, write facts and concepts cards, then later write detailed cards.\2025-09-04T10:43:00\58.634993
+Nielsen 2018 deletes API cards when {}\he thinks he will not use the API in the next year.\2025-09-22T20:16:00\192.150325
+
+* Python lang
+To exit a Python program with a return code of zero, execute {}.\sys.exit(0)
+* sed editor
+To print lines 10 through 20 in a file, use the sed command {}\sed -n '10,20p'\2025-09-04T11:09:00\27.552608999999997
+
+* Spanish
+# In Spanish, the verb "to speak" is {}\habar.
+# In Spanish, the verb "to eat" is {}\comer.
+# In Spanish, the verb "to live" is {}\vivir.
+# In Spanish, the present indicative conjugation of the regular verb "to speak" is {}\hablo, hablas, habla, hablamos, habláis, hablan
+# In Spanish, the present indicative conjugation of the regular verb "to eat" is {}\como, comes, come, comemos, coméis, comen.
+# In Spanish, the present indicative conjugation of the regular verb "to live" is {}\vivo, vives, vive, vivimos, vivis, viven.
+# In Spanish, use the present indicative mode for {}\actions or states that occur in the present or on a regular basis.
+# In Spanish, use the preterite tense for {}\actions or states that begin and ended at a definite time in the past.
+# In Spanish, the verb "to sing" is\cantar.
+# In Spanish, the verb "to drink" is\beber.
+# In Spanish, the verb "to write" is\escribir.
+# In Spanish, the preterite tense conjugation of the regular verb "to sing" is\canté, cantaste, cantó, cantamos, cantasteis, cantaron.
+# In Spanish, the preterite tense conjugation of the regular verb "to dring" is\bebí, bebiste, bebió, bebimos, beisteis, bebieron.
+# In Spanish, the preterite tense conjugation of the regular verb "to write" is\escribi, escribiste, escribió, escribimos, escibistein, escribieron.
+# TODO Create items for the Spanish imperfect tense.
+# TODO Create items for the only three verbse that have irregular imperfect tense conjugations.
+# TODO Create items for the Spanish future and conditional tenses.
+In Spanish, my wife likes them as well.\Mi esposa también le gustan.\2025-11-02T17:04:21.732276\0.006944444444444444
+In Spanish, an appointmnet.\una cita\2025-09-11T12:48:00\29.616614
+In Spanish, I have an appointment with X is {}.\Tengo una cita X\2025-09-04T11:04:00\22.849776
+"In Spanish to say ""which way"", say {}"\por dónde, as in which way to X.\2025-11-02T17:04:48.461551\0.006944444444444444
+To present indicative conjugation of the Spanish verb poder is {}.\puedo, puedes, puede, podemos, podéis, pueden.\2025-09-04T09:16:00\29.288981999999997
+"The Spanish ""se puede"" translates to {}"\can one\2025-09-11T12:52:00\32.560356
+"To say ""can one"" in Spanish, say {}"\se puede\2025-09-22T19:01:00\23.040221
+In Spanish, where can one find X is {}\Dónde se puede encontrar X?\2025-11-02T17:06:07.653761\0.006944444444444444
+The Spanish verb for to eat is {}\comer\2025-09-04T10:46:00\21.57327
+The Spanish verb for to drink is {}\beber\2025-09-04T11:05:00\25.1085
+The Spanish word for edible is {}.\comestible\2025-11-02T17:03:25.270183\47.751221977013884
+The Spanish word for groceries is {}.\los comestibles\2025-09-04T10:41:00\23.032511
+In Spanish, a grocery store\una tiende de comestibles\2025-09-22T17:41:00\3.801256
+In Spanish, the verb for to be able to or can is {}\poder\2025-09-04T10:46:00\35.995951999999996
+# In Spanish: Where can one find a pharmacy?\Dónde se puede encontrar una famacia?\2025-07-29T13:58\1.606284
+# In Spanish: Where can one find a grocery store?\Dónde se puede encontrar una tiene de comestibles?\2025-07-29T14:13\0.863865
+# In Spanish: Excuse me, which way is it to the subway?\Por favor, por dónde se va a el metro?\2025-07-29T14:12\0.007045
+In Spanish: I understand\Yo comprendo\2025-09-22T18:58:00\11.577736999999999
+In Spanish: Do you understand?\Comprende usted?\2025-08-23T07:23:00\35.433081
+In Spanish: I like it very much\Me gusta mucho\2025-09-04T10:43:00\29.328259
+In Spanish: That's right\Exacto\2025-09-22T17:42:00\60.719585
+In Spanish: You are welcome\De nada\2025-09-22T19:01:00\80.091074
+The handle is loose in Spanish is {}.\El mango esta suelto.\2025-09-22T18:59:00\13.344139
+The handle in Spanish is {}.\el mango.\2025-09-22T19:00:00\34.331383
+I have a question in Spanish is {}.\Tengo una pregunta.\2025-09-11T12:55:00\45.102439000000004
+The Spanish word for noise is {}.\el ruido\2025-09-23T19:31:00\33.808107
+
+* Terminal commands
+In the terminal, to copy directory SOURCE to DEST, enter {}.\cp -a SOURCE DEST  (the -a preserves all file attributes)\2025-09-04T10:44:00\29.205786
+In the terminal, to remove directory X, enter {}.\rm -r X (the -r means recursive)\2025-08-21T08:47:00\65.17914400000001
+
+* Torch
+To create a Torch tensor from a Python data object, execute {}.\torch.tensor(data)
+Import the Torch library using the import statemment {}.\import torch
+To create a Torch tensor with random values using the shape and data type of another tensor, execute {}.\torch.rand_like(other)
+To create a Torch tensor with all ones using the shape and data type of another tensor, execute {}.\torch.ones_like(other)
+The Python data type for a Torch tensor's shape is a {}.\list or tuple of integers
+To create a random Torch tensor with a given shape, execute {}.\torch.rand(shape)
+To create an all-one Torch tensor with a given shape, execute {}.\torch.ones(shape)
+To create an all-zeros Torch tensor with a given shape, execute {}.\torch.zeros(shape)
+The attribute holding the shape of a Torch tensor is {}.\x.shape
+The attribute holding the data type of a Torch tensor is {}.\x.dtype
+The attribute holding the device holding a Torch tensor is {}.\x.device
+To join tensors along a given dimension, use the function {}.\torch.cat((tensor1, tensor2, tensor3), dim=1)
+To multiply tensors element wise, execute {} or {}\x.torch.mul(y) OR x * y
+To multiply tensors via matrix multiplication, execute {} or {}.\x.tensor.matmul(y) OR x @ y
+In-place tensors operations are denoted with {}\a trailing underscore (_)
+To transpose a tensor, execute {}.\x.T
+To store the gradients from a model in its {} attribute, call {} just after {}.\{.grad} {the backward() method} {the forward mathod}
+To optimize the parameters, call {} on an optimizer.\{the step() method}
+The PyTorch SGD optimizer has paraamters to set the {} and the {}.\{learning rate} {momentum}
+To tell PyTorch to collect gradients for a tensor, {}\set the parameter requires_grad to True when creating the tensor
+In PyTorch, if f is a function of a and b, calling the backward method on f puts the gradients in {} and {}.\{a.grad} {b.grad}
+One approach to fine-tuning the training of a PyTorch classifier is to {}.\freeze the parameters in all layers but the final classifying layer.
+Your neural network model is typically a subclass of {} defining methods {}.\{nn.Module} {__init__(self) and forward(self, input)}
+The learnable paramters in your neural network are obtained by {}.\executing the method ~net.parameters()~.
+To use a single sample for training or prediction with PyTorch, convert it to a mini-batch by {}.\calling ~x.unsqueeze(0)~.
+To determine the gradients wrt the parameters, call {} then {}.\{optimizer.zero_grad()} {loss.backward{}}
+* Xcode
+In Xcode, to reformat the entire file with the keyboard, enter {}.\C-S-i (aka, C-I)\2025-11-02T17:03:58.023335\1.3421106743171296
+In Xcode, to start a selection with the keyboard, enter {}.\(Shift+{arrow key}\2025-09-22T17:40:00\2.438842
+In Xcode, to reindent a region, select the region then enter {}.\(C-i)\2025-09-22T18:57:00\8.576092000000001
+In Xcode, to reindent the entire file, enter {} then {}.\(Cmd-A -- to select the entire file) (C-i  to indent the region)\2025-09-22T18:59:00\11.826113
