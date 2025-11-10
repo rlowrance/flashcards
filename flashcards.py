@@ -311,13 +311,11 @@ def make_parser() -> argparse.ArgumentParser:
         epilog="More help can be found at https://rlowrance.github.com/flashcards",
     )
 
-    def add_flag(*names, **kwargs):
-        """Add a flag to the parser"""
-        parser.add_argument(*names, action="store_true", default=False, **kwargs)
+    parser.add_argument("--develop", action="store_true", default=False, help="turn on additional output that may help the developer")
+    parser.add_argument('--new-card-limit', action='store', default=None, type=int, help="limit number of new cards (default: present all new cards)")
+    parser.add_argument("--version", action='version', version="%(prog)s 1.2")
 
-    add_flag("--version", help="show version and exit")
-    add_flag("--develop", help="for the developer only")
-    parser.add_argument("filename", nargs="*", help="filename to read (required)")
+    parser.add_argument("filename", nargs="*", help="filename to read and rewrite (required)")
     return parser
 
 
@@ -348,11 +346,6 @@ def main():
 
     if args.develop:
         print("args", args)
-
-    if args.version:
-        invocated = os.path.basename(sys.argv[0])
-        print(f"{invocated} 1.1")
-        sys.exit(0)
 
     if args.filename is None or len(args.filename) != 1:
         error_print_help("Did not supply one filename")
@@ -410,7 +403,7 @@ def print_input_summary(input_file: InputFile) -> None:
         )
 
 
-def process_card(card) -> str:
+def process_card(card, verbose) -> str:
     """Present a card and return its rating or 'quit'"""
     print("")
     for heading in card.headings:
@@ -421,6 +414,8 @@ def process_card(card) -> str:
     p3 = f"expected response: {card.response}"
 
     print(" ")
+    if verbose:
+        print(f"process_card: {card}")
     print(p1)
     user_input = input(p2)
     if len(user_input) == 1 and user_input == "q":
@@ -463,7 +458,7 @@ def process_cards(cards, random_interval, verbose):
         card = card_queue.pop()  # retrieve card with lowest next presentation date
         if card.next_presentation() > datetime.datetime.now() + prelook:
             break
-        rating = process_card(card)  # mutate card
+        rating = process_card(card, verbose)  # mutate card
         match rating:
             case "again":
                 card.last_presentation = datetime.datetime.now()
