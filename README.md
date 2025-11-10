@@ -1,98 +1,99 @@
-# Analyze Tags in Org-mode Files
+# A command-line spaced repetition flash card program
+Anki (simplified) in a terminal
+
+I have been a heavy user of Anki, the flash card program, but found that I mostly did not need to visual representation of flash cards and almost always said that I had a good recall or that the card should be presented again. Entering cards in the Anki GUI was more time-consuming than I would prefer.
+
+The flashcards.py program overcomes this problem by
+- Using a text file to hold the cards. A text file is easy for me to edit, as I am proficient with at least one text editor. I use Emacs, but any text editor can be used.
+
+- Running the program in the terminal. I do a lot of software development and many of the cards I will want to study are about software engineering, so running a flash card program in a terminal is natural for me.
+
+- Reducing the number of options for evaluating my response to just two: good enough or not good enough. After Anki presents a prompt from a flash card, it allows you to key in your response and then shows it the expected response that you previously entered. You can rate your response as "again" (you got the card wrong), "hard" (you were right but had difficulty recalling the answer), "good" (you were right)", or "easy" (you knew the right answer immediately). Anki's documentation says that the most common evaluation is "good", so I decided that I would have only two evalutions: "again" (I didn't recall the response) and "good" (I did recall it).
+
+I decided to make the text file an org-mode file because I use org-mode all the time and could take advantage of org-mode's ability to create and manage text files structured as outlines. You can ignore the outline capability 
+
+
 
 ## Usage
+1. Create a text file, say "madrid.org" containing your flash cards. A line in the file looks like this:
+```
+The capital of Spain is {}.\Madrid
+The name "Madrid" meant {} in its original Arabic.\place of many streams
+```
 
-This Python command-line program reads one or more Emacs Org-mode
-files and prints a report on stdout saying which headlines mention
-which tags.
+The format is a prompt followed by the expected response separated by a backslash character. The backslash was chosen as a field separator because it was not frequently occuring in the material I want to study with flash cards.
 
-The printed file is formatted as an Org-mode file. Typically I pipe it
-to a temporary file which I open in Emacs.
+In addition to cards like the above, you can add comments and heading to the file. A comment is any line with a "#" it its first position. A heading is any lne with a "*" in its first position.
 
-My main use case for the command is around a large Org-mode file I
-maintain. That file has most of my notes in it--it's a "one big text
-file" (OBTF).  Each note begins with an Org-mode header, which is a line starting with a "*". Some of the headers
-have Org-mode tags in them. In Org-mode, a tag is sequence of
-characters written between colons, as in `:tag:` (which is one tag)
-and `:tag1:tag2:` which are two tags. Org-mode expects tags to
-contains only alphabetic or numeric characters or the characters "@"
-or "_". My tags mostly reflect the topics in the note.
+In my flash card files, I use a top-level heading for the name of the chapter from which the card was derived.
 
-I use this command to find misspelled tags. That works because the
-command prints tags in alphabetic order.
+If I think I may need to go back to the source work, I put the page number in the source as the first few characters of the card line.
 
-I also use it to find all the notes on a given topic. I use this when
-assembling research for a writing project or deciding on futher
-research.
+Here's an example, the first few of my cards for Richard Ovenden's "Burning the Books".
+```
+9 Keeping every document is {}.\economically unsustainable
+13 In the UK, local authorities were required to provide libraries starting in {}.\1964
+```
+
+You can use any characters to indicate the omitted fill-in-the-blank material. I used "{}" because it is easy for my eyes to spot.
+
+2. Run this command in a terminal
+```
+$ flashcards madrid.org
+```
+3. Respond to the prompts in the terminal. When all the cards have been presented, the program will overwrite the input file, which will hold the information needed to schedule spaced repetitions in the future.
+
 
 ## Installation
 
-To install, clone this repo then copy the file `tags.py` to a
-directory that is in your path. If you use your `~/bin` directory, you
-can do this by running the script `install-into-home-bin.sh` and setting
-your `$PATH` in your shell's initialization script.
+To install, clone this repo. CD to your cloned directory.
 
-You will probably need to edit the shebang line at the top of the
-script to locate your Python interpretter. In MacOS, you can run the
-command `$which python3` to locate your Python command.
+You will probably need to edit the shebang line at the top of the file `flashcards.py` so that it points to your installed Python interpretter. You can find out where your interpret is by entering `$ which python3~.
+
+Make any edits needed to `flashcards.py`. Save it then run `$ chmod +x install-to-home-bin.sh` then `$ ./install-to-home-bin.sh`.
+You will find the flashcard common in your bin directory, `~/bin`.
+
 
 ## Invocation
 
-To use the command, invoke the command with one or more filenames on the command line.
+I created a directory with all my flash cards files in it. I have one file for each topic. For example, I have a file `torch.org` which holds flash cards related to the `pytorch` library.
 
-Here are some examples of invocations:
+You run the program by entering `$ flashcards torch.org` in a terminal.
 
-- To analyze the tags in the file `journal.org`, enter `$tags
-  journal.org`. Because I typically pipe the output, I enter `$tags
-  journal.org > tmp.org` then open the `tmp.org` file in Emacs.
+The program will read `torch.org` and present to you any cards in it that are due. A card is due if it is new or if a sufficient amount of time has passed since you last successfuly responded to the prompt in the card.
 
-- To analyze the tags in all Org-mode files in a directory, change to
-  that directory then enter `$tags *.org`. You might want to do this
-  if you maintain a directory containing many of your notes.
+A card will be repetetively presented until you say your recall was "good." However, any time you are prompted you can tell the program to quit by entering "q" or "quit".
 
-- To analyze the tags from stdin, enter `$tags`.
+When you have rated all the cards as good or have quit, the original file is rewriting with additional information--the date and time of the last presentation and the interval that program will to present the card to you again.
 
-The command reads the files specified, then prints to stdout a report
-showing each tag and for each tag, the headlines in the file that
-mention that tag.
+Initially the interval is one day. Every time you mark your recall as "good" the interval is multiplied by 2.4.
 
-These are the invocation options:
-- `--develop` turns on additional output that I found useful as I wrote the program.
-- `-h` and `--help` write help text to stdout.
+In addition, to keep cards that you entered all at once from always clustering in the repetitions, the interval for each card is randomized.
+
+When you invoke the program you can specify `--help` or `--version`.
+
+In my use of the program, I will often enter a lot of cards at one sitting but don't want to review all of those cards the next time I invoke the program. Then I invoke theprogram using `$ flashcards --new-card-limit 10 torch.org~ so that only 10 new cards are presented.
+
+When developing the program, I used the `--develop` invocation argument to have the program print extra debugging information.
 
 ## Limitations
 
-The printed report doesn't include the file name as that would be additional clutter in the output and I use the command mostly for one file at a time.
+The program doesn't handle graphics and has a limited range of marks for how well you recalled in the information.
 
 ## Contributing
 
-The code uses these built-in Python modules:
-- `argparse` to read the invocation arguments
-- `collections` to create a `namedtuple` internal data type `TagUsage`.
-- `fileinput` to read the input files specified on the command line or to read stdin, if no files are specified on the command line.
+You can fork the code and modify it.
 
-I don't follow typical guidelines for formatting Python source code, but you
-are welcome to reformat the code using your favorite style.
+All the code is in one Python file.
+
+In addition to some of the Python-included libraries, I used numpy to gain access to its randomizer.
+
+The code has been run through `black` and `pylint` with default arguments, though I haven't corrected all the `pylint` suggestions.
 
 The license is the MIT license.
 
 ## Possible future work
 
-- Update the script to include the input file names in the printed
-  report. Then the command would be more useful for analyzing the tags
-  across multiple files.
-
-- Extend the kinds of file analyzed to include markdown files. These
-  have a tag syntax different from that used in Org-mode files.
-
-- Build a companion capability, possibly in the same script, to
-  analyze tags in file names. That requires deciding on a convention
-  for putting tags in file names. I use ` -- {tag} {tag}...` to embed
-  tags in file names.
-
-- Convert the command to an Emacs function that runs inside of
-  Emacs. It would run on the current buffer and create a new buffer
-  with the analysis report.
 
 ## About me
 
