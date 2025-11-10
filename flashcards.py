@@ -11,7 +11,6 @@ import functools
 import heapq
 import io
 import os.path
-import pprint
 import shutil
 import sys
 from typing import Self
@@ -122,6 +121,20 @@ class Card:
             else self.last_presentation + self.interval
         )
 
+    def total_hours(self) -> float:
+        """Return total number of cards in the card's interval"""
+        return self.interval.total_seconds() / (24 * 60 * 60)
+
+    def as_csv_string(self) -> str:
+        """Return a string in CSV format"""
+        fields = (
+            [self.prompt, self.response]
+            if self.is_new()
+            else [self.prompt, self.response, self.last_presentation.isoformat(timespec="minutes"), str(round(self.total_hours(), 2))]
+        )
+        return csv_quote(fields, delimiter="\\")   
+            
+
 
 def test_card_from_str():
     """unit test"""
@@ -212,94 +225,84 @@ class CardQueue:
         assert isinstance(card, Card)
         heapq.heappush(self._heap, (card.next_presentation(), card))
 
+class InputFile:
+    """Utilities for handling the input file"""
+    def __init__(self, filename):
+        self.filename = filename
+        # Info from an input line that is a card is in self.lines (as a str) and in self.cards (parsed into fields)
+        self.input_lines: [InputLine] = []   # every input line
+        self.cards: [Card] = []   # some input lines contain cards, which are stored here
 
-def file_create_backup(source_file_name: str) -> None:
-    """Create backup copy of file with name suffixed by current datetime"""
-    # ref: Google Search Labs
-    assert os.path.exists(source_file_name)
-    timestamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
-    backup_file_name = f"{source_file_name}.{timestamp}.bak"
-    try:
-        shutil.copy2(source_file_name, backup_file_name)  # preserves some metadata
-    except FileNotFoundError as e:
-        error(f"error creating backup of {source_file_name}: {e}")
+    def create_backup_file(self) -> None:
+        """Create backup copy of file with name suffixed by current datetime"""
+        # ref: Google Search Labs
+        assert os.path.exists(self.filename)
+        timestamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
+        backup_file_name = f"{self.filename}.{timestamp}.bak"
+        try:
+            shutil.copy2(self.filename, backup_file_name)  # preserves some metadata
+        except FileNotFoundError as e:
+            error(f"error creating backup of {self.filename}: {e}")
 
+    def read(self, new_card_limit: int | None, verbose: bool) -> None:
+        """Mutate self from file creating lines and cards (a subset of lines)"""
+        assert new_card_limit is None or new_card_limit >= 0
+        assert os.path.isfile(self.filename)
+        with open(self.filename, "r", encoding="utf-8") as file:
+            raw_lines = file.readlines()
 
-def file_read_lines(filename: str, verbose) -> ([InputLine], [Card]):
-    """Return all the lines and the Cards in them"""
-    assert os.path.isfile(filename)
-    with open(filename, "r", encoding="utf-8") as file:
-        raw_lines = file.readlines()
+        self.input_lines = [InputLine(index, raw_line.rstrip())
+                            for index, raw_line in enumerate(raw_lines)]
+        self._make_cards(len(self.input_lines) if new_card_limit is None else new_card_limit, verbose)
 
-    input_lines = []
-    cards = []
-    # A Card knows about any headings preceeding it; the headings are topics or sources
-    current_headings = []
-
-    for index, raw_line in enumerate(raw_lines):
-        if verbose:
-            print("raw_line", raw_line)
-        input_line = InputLine(index, raw_line.rstrip())
-        input_lines.append(input_line)
-        match input_line.kind():
-            case InputLineKind.CARD:
-                # be sure to copy the headings as current_heading is mutated
-                card = Card.from_str(
-                    copy.deepcopy(current_headings), index, input_line.text
-                )
-                cards.append(card)
-            case InputLineKind.COMMENT:
-                continue
-            case InputLineKind.EMPTY:
-                continue
-            case InputLineKind.HEADING:
-                depth = input_line.heading_depth()
-                if verbose:
-                    print(depth, current_headings)
-                while depth != len(current_headings) + 1:
-                    if depth < len(current_headings) + 1:
-                        current_headings.pop()
-                    else:
-                        current_headings.append(" ")
-                current_headings.append(input_line.text)
-
-        if verbose:
-            print("updated current_headings", current_headings)
-            print("cards")
-            pprint.pprint(cards)
-    return input_lines, cards
-
-
-def file_write_lines(lines: [InputLine], cards: [Card], filename, verbose) -> None:
-    """Write lines and miutated cards to an output file"""
-    card_for_index = {card.index: card for card in cards}
-    with open(filename, "w", encoding="utf-8") as file:
-        n_lines_written = 0
-        for line in lines:  # sorted by index
-            match line.kind():
-                case InputLineKind.CARD:
-                    card = card_for_index[line.index]
-                    match card.is_new():
-                        case True:
-                            fields = [
-                                card.prompt,
-                                card.response]
-                        case False:
-                            fields = [
-                                card.prompt,
-                                card.response,
-                                card.last_presentation.isoformat(),
-                                str(card.interval.total_seconds()/(24*60*60)),
-                            ]
-                    s = csv_quote(fields, delimiter="\\") + "\n"
-                case _:
-                    s = line.text + "\n"
+    def _make_cards(self, n_remaining_new_cards: int, verbose: bool):
+        """Mutate self by finding and appending up to n_remaining_new_cards"""
+        def new_headings(heading: InputLine, current_headings: [str]) -> [str]:
+            if verbose: print(f"new_headings: {heading} {current_headings}")
+            depth = heading.heading_depth()
+            if len(current_headings) == depth - 1:
+                return current_headings + [heading.text]
+            if len(current_headings) < depth - 1:
+                return new_headings(heading, current_headings + [" "])
+            current_headings.pop()
+            return new_headings(heading, current_headings)
+            
+        current_headings = []
+        for input_line in self.input_lines:
             if verbose:
-                print(f"writing line: {s[:-1]}")
-            file.write(s)
-            n_lines_written += 1
-    print(f"wrote {n_lines_written} lines to file {filename}")
+                print(current_headings, input_line)
+            if input_line.kind() == InputLineKind.HEADING:
+                current_headings = new_headings(input_line, copy.deepcopy(current_headings))
+                if verbose:
+                    print('updated current_headings', current_headings)
+            elif input_line.kind() == InputLineKind.CARD:
+                # NOTE: copy the headings because they are mutated above
+                card = Card.from_str(copy.deepcopy(current_headings), input_line.index, input_line.text)
+                if card.is_old():
+                    self.cards.append(card)
+                elif card.is_new() and n_remaining_new_cards > 0:
+                    self.cards.append(card)
+                    n_remaining_new_cards -= 1
+                
 
+    def overwrite_original_file(self, verbose: bool) -> None:
+        """Write lines and miutated cards to an output file"""
+        card_for_index = {card.index: card for card in self.cards}
+        with open(self.filename, "w", encoding="utf-8") as file:
+            n_lines_written = 0
+            for input_line in self.input_lines:  # sorted by index
+                if input_line.kind() == InputLineKind.CARD and input_line.index in card_for_index:
+                    s = card_for_index[input_line.index].as_csv_string()
+                else:
+                    s = input_line.text
+
+                if verbose:
+                    print(f"writing line: {s}")
+                file.write(s + "\n")
+                n_lines_written += 1
+        print(f"wrote {n_lines_written} lines to file {self.filename}")
+ 
+        
 
 def make_parser() -> argparse.ArgumentParser:
     """Return an Argument Parse"""
@@ -358,34 +361,36 @@ def main():
     if not os.path.exists(filename):
         error_print_help(f"File does not exist: {filename}")
 
-    file_create_backup(filename)
-
-    input_lines, cards = file_read_lines(filename, args.develop)
-    if len(input_lines) == 0:
+    input_file = InputFile(filename)
+    input_file.create_backup_file()
+    input_file.read(2, args.develop)  # FIXME: first arg is a testing stub
+    
+    if len(input_file.input_lines) == 0:
         print(f"empty input file: {args.filename}")
         sys.exit(0)
     if args.develop:
         print("lines read")
-        for input_line in input_lines:
+        for input_line in input_file.input_lines:
             print(f"line:  {input_line}")
-        for card in cards:
+        for card in input_file.cards:
             print(f"card: {card}")
-    print_input_summary(input_lines, cards)
-    if len(cards) == 0:
-        error("ERROR: No cards were found")
+    print_input_summary(input_file)
+    if len(input_file.cards) == 0:
+        print("No cards were found")
+        sys.exit(0)
 
     # Spread out intervals to spread out cards introduced at the same time
     random_sampler = make_uniform_random_sampler()
-    process_cards(cards, random_sampler, args.develop)  # mutate cards
-    file_write_lines(input_lines, cards, filename, args.develop)
+    process_cards(input_file.cards, random_sampler, args.develop)  # mutate cards
+    input_file.overwrite_original_file(args.develop)
 
 
-def print_input_summary(lines: [InputLine], cards: [Card]) -> None:
+def print_input_summary(input_file: InputFile) -> None:
     """Print a summary of the input lines"""
-    print(f"read {len(lines)} lines")
+    print(f"read {len(input_file.input_lines)} lines")
 
-    new_cards = [card for card in cards if card.is_new()]
-    old_cards = [card for card in cards if card.is_old()]
+    new_cards = [card for card in input_file.cards if card.is_new()]
+    old_cards = [card for card in input_file.cards if card.is_old()]
     old_due_cards = [card for card in old_cards if card.next_presentation() <= datetime.datetime.now()]
     print(f"found {len(new_cards)} new cards, all of which are due")
     print(f"found {len(old_cards)} old cards, {len(old_due_cards)} of which are due ")
