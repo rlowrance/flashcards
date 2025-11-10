@@ -407,6 +407,7 @@ def print_input_summary(lines: [InputLine], cards: [Card]) -> None:
 
 def process_card(card) -> str:
     """Present a card and return its rating or 'quit'"""
+    print("")
     for heading in card.headings:
         print(heading)
     # align prompts
@@ -414,6 +415,7 @@ def process_card(card) -> str:
     p2 = f"    your response? {' '}"
     p3 = f"expected response: {card.response}"
 
+    print(" ")
     print(p1)
     user_input = input(p2)
     if len(user_input) == 1 and user_input == "q":
